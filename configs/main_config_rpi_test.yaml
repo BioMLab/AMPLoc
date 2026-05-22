@@ -1,0 +1,131 @@
+# RPI单模态模型独立测试集推理配置文件
+# 用于在独立测试集上进行模型推理
+
+output:
+  dir: "outputs"
+
+data:
+  csv_path: "temp_test_files/Validation set/lncRNA_Validation.csv"  # 独立测试集
+  mode: "normal"
+  sequence_col: "Sequence"
+  label_col: "SubCellular_Localization"
+  gene_id_col: "Gene_ID"
+
+training:
+  device: "cuda:0"
+  random_state: 42
+  validation_split: 0.0  # 测试集不需要分割
+  epochs: 1  # 只用于推理
+  batch_size: 16
+  learning_rate: 0.0001
+  patience: 1
+  num_workers: 4
+  best_metric_key: "Ave-F1"
+  early_stop_on_target: false  # 测试时不需要早停
+
+mbt_fuser:
+  fusion_dim: 768
+  num_layers: 4
+  num_heads: 12
+  num_fusion_tokens: 32
+  ffn_dim: 3072
+  dropout: 0.1
+
+# 禁用所有其他通道，只保留RPI通道
+lncmamba:
+  enabled: false
+  k_mer: 3
+  seq_max_len: 64
+  embedding_dim: 512
+  w2v_window: 5
+  w2v_workers: 8
+  w2v_epochs: 10
+  mamba_d_state: 128
+  mamba_d_conv: 4
+  mamba_expand: 2
+  use_motif_enhancement: true
+  motif_factor: 1.5
+  motifs:
+    - "TTT"
+    - "AAA"
+    - "TTG"
+    - "TTA"
+    - "GTT"
+    - "ATT"
+    - "TAA"
+    - "GAA"
+    - "AAT"
+    - "AAG"
+
+rnaloclm:
+  enabled: false
+  rna_fm_model_path: "pretrained/RNA-FM/RNA-FM_pretrained.pth"
+  input_dim: 640
+  num_filters: 50
+  filter_sizes: [3, 5, 7]
+  dropout: 0.5
+  hidden_dim: 40
+  num_layers: 4
+  num_heads: 5
+
+cfploc:
+  enabled: false
+  feature_dir: "data/cgr_features"
+  in_channels: 256
+  num_filters: 32
+  dense_dim: 1024
+  dropout: 0.5
+
+ilocbert:
+  enabled: false
+  seq_max_len: 2292
+
+intra_graph_channel:
+  enabled: false
+  structure_csv_path: "data/structures.csv"
+  model_type: 'gin'
+  input_dim: 4
+  hidden_dim: 128
+  num_layers: 3
+
+inter_graph_channel:
+  enabled: false
+  k_mer: 4
+  num_neighbors: 20
+  graph_output_path: "data/processed/inter_graph_data.pt"
+  id_map_output_path: "data/processed/inter_graph_id_map.json"
+  in_channels: 256
+  hidden_dim: 128
+  output_dim: 128
+  num_heads: 8
+  dropout: 0.5
+
+# 只启用RPI通道
+rpi_channel:
+  enabled: true
+  rpi_file: "temp_test_files/Validation set/validation_rpi_scores.csv"  # 测试集RPI数据
+  rbp_file: "temp_test_files/Validation set/rbp_locations.csv"  # 测试集RBP数据
+  
+  # RPI模型超参数
+  rpi_dim: 22              # RPI特征维度 (对应22个RBP)
+  d_model: 132             # 嵌入维度 (22 * 6 = 132)
+  seq_len: 22              # 序列长度
+  feature_dim: 6           # 特征维度，确保d_model能被seq_len整除
+  num_heads: 2             # 注意力头数
+  num_layers: 3            # 注意力层数
+  dropout_rate: 0.2        # Dropout率
+
+# 禁用智能体，直接使用RPI通道
+channel_agent:
+  enabled: false
+
+# 元架构配置 - 只使用RPI通道
+meta_architect:
+  enabled: true
+  # 只使用RPI通道
+  active_fusion_channels: ["rpi_channel"]
+  aux_loss_weight: 0.0  # 关闭辅助损失，因为只有一个通道
+  
+  # RPI通道权重
+  channel_weights:
+    rpi_channel: 1.0
