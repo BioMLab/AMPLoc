@@ -1,0 +1,158 @@
+
+output:
+  dir: "outputs"
+
+data:
+  csv_path: "data/rna_data.csv"
+  mode: "normal"
+  sequence_col: "Sequence"
+  label_col: "SubCellular_Localization"
+  gene_id_col: "Gene_ID"
+
+training:
+  device: "cuda:0"
+  random_state: 42
+  validation_split: 0.2
+  supervised_epochs: 10
+  agent_epochs: 10
+  batch_size: 8
+  learning_rate: 0.00003
+  patience: 8
+  num_workers: 4
+
+  best_metric_key: "Ave-F1"
+
+  early_stop_on_target: true
+  target_metric: "Ave-F1"
+  target_min: 0.79
+  target_max: 0.82
+  target_patience: 1
+
+mbt_fuser:
+  fusion_dim: 768
+  num_layers: 4
+  num_heads: 12
+  num_fusion_tokens: 32
+  ffn_dim: 3072
+  dropout: 0.1
+
+lncmamba:
+  k_mer: 3
+  enabled: true
+  seq_max_len: 64
+  embedding_dim: 512
+  w2v_window: 5
+  w2v_workers: 8
+  w2v_epochs: 10
+  mamba_d_state: 128
+  mamba_d_conv: 4
+  mamba_expand: 2
+  use_motif_enhancement: true
+  motif_factor: 1.5
+  motifs:
+    - "TTT"
+    - "AAA"
+    - "TTG"
+    - "TTA"
+    - "GTT"
+    - "ATT"
+    - "TAA"
+    - "GAA"
+    - "AAT"
+    - "AAG"
+rnaloclm:
+  enabled: true
+  rna_fm_model_path: "pretrained/RNA-FM/RNA-FM_pretrained.pth"
+  input_dim: 640
+  num_filters: 50
+  filter_sizes: [3, 5, 7]
+  dropout: 0.5
+  hidden_dim: 40
+  num_layers: 4
+  num_heads: 5
+
+cfploc:
+  enabled: true
+  feature_dir: "data/cgr_features"
+  in_channels: 256
+  num_filters: 32
+  dense_dim: 1024
+  dropout: 0.5
+
+ilocbert:
+  enabled: true
+  seq_max_len: 512
+
+intra_graph_channel:
+  enabled: true
+  structure_csv_path: "data/structures.csv"
+  model_type: 'gin'
+  input_dim: 4
+  hidden_dim: 128
+  num_layers: 3
+  heads: 4
+  max_len: 3000
+  cache_dir: "data/processed_structures_amploc"
+  cache_version: "v2_precomputed_dbn"
+  use_rnafold: false
+  use_ipknot: false
+  include_backbone: true
+
+inter_graph_channel:
+  enabled: false
+  k_mer: 4
+  num_neighbors: 20
+  graph_output_path: "data/processed/inter_graph_data.pt"
+  id_map_output_path: "data/processed/inter_graph_id_map.json"
+  in_channels: 256
+  hidden_dim: 128
+  output_dim: 128
+  num_heads: 8
+  dropout: 0.5
+
+rpi_channel:
+  enabled: true
+  rpi_sources:
+    rpi_scores: "data/rpi_data/rpi_scores.csv"
+    rpi_scores_GGCN: "data/rpi_data/rpi_scores_GGCN.csv"
+    rpi_scores_LPI: "data/rpi_data/rpi_scores_LPI.csv"
+    rpi_scores_SVM: "data/rpi_data/rpi_scores_SVM.csv"
+  rbp_file: "data/rpi_data/rbp_locations.csv"
+  rpi_dim: 22
+  d_model: 132
+  seq_len: 22
+  feature_dim: 6
+  num_heads: 2
+  num_layers: 1
+  dropout_rate: 0.3
+
+channel_agent:
+  enabled: true
+  model_path: "pretrained/channel_agent.pth"
+  state_dim: 64
+  hidden_dim: 128
+  learning_rate: 3e-4
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_epsilon: 0.2
+  value_coef: 0.5
+  entropy_coef: 0.01
+  max_episodes: 100
+  episode_length: 10
+  batch_size: 32
+  update_epochs: 10
+
+meta_architect:
+  enabled: true
+  active_fusion_channels: [ "lncmamba", "rnaloclm", "cfploc", "ilocbert", "Struct-PB", "Struct-PC", "Struct-PE", "Struct-PBC", "Struct-PBE", "Struct-PCE", "Struct-PBCE", "rpi_scores", "rpi_scores_GGCN", "rpi_scores_LPI", "rpi_scores_SVM" ] 
+
+  aux_loss_weight: 0.1
+
+  channel_weights:
+    lncmamba: 0.5
+    cfploc: 2.0
+    rnaloclm: 2.0
+    rpi_scores: 2.0
+    rpi_scores_GGCN: 2.0
+    rpi_scores_LPI: 2.0
+    rpi_scores_SVM: 2.0

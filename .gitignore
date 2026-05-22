@@ -1,0 +1,37 @@
+# Runtime and editor artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.env
+.idea/
+.vscode/
+
+# Local outputs and scratch space
+outputs/
+temp_test_files/
+whl/
+mamba/
+
+# Large derived data caches that should not be shipped in the main GitHub repo
+data/cgr_features/
+data/processed/
+data/processed_structures/
+data/processed_structures_amploc/
+data/processed_structures_linearfold/
+data/processed_structures_linearfold_dataset2/
+data/raw/
+
+# Large pretrained model bundles kept outside the main release package
+pretrained/DNABERT-2-117M/
+pretrained/RNA-FM/
+pretrained/whl/
+pretrained/.pytorch_model.bin
+
+# Dataset 2 split artifacts are not part of the public release scope
+data/rigorous_splits/dataset2_*
+
+# Logs and notebook checkpoints
+*.log
+.ipynb_checkpoints/

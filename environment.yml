@@ -1,0 +1,27 @@
+name: amploc
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - pyg
+dependencies:
+  - python=3.10
+  - pip>=23.1
+  - numpy>=1.21
+  - pandas>=1.4
+  - scipy>=1.9
+  - scikit-learn>=1.1
+  - pyyaml>=6.0
+  - tqdm>=4.64
+  - matplotlib>=3.5
+  - seaborn>=0.11
+  - plotly>=5.0
+  - logomaker>=0.8
+  - biopython>=1.79
+  - networkx>=2.8
+  - igraph>=0.9
+  - requests>=2.28
+  - urllib3>=1.26
+  - joblib>=1.1
+  - pip:
+      - -r requirements.txt
